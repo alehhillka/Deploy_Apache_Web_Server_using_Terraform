@@ -1,0 +1,39 @@
+---
+- name: Install and start Apache on Amazon Linux 2
+  hosts: localhost
+  become: yes  # Дозволити піднятися до root-користувача
+
+  tasks:
+    - name: Install Apache web server
+      package:
+        name: httpd
+        state: present  # Встановити httpd (Apache) якщо ще не встановлено
+
+    - name: Start Apache service
+      service:
+        name: httpd
+        state: started
+        enabled: yes  # Запустити Apache при завантаженні системи
+
+    - name: Open port 80 in the firewall
+      firewalld:
+        service: http
+        permanent: yes
+        state: enabled
+      when: ansible_os_family == 'RedHat'  # Перевірка, що це Amazon Linux 2
+
+    - name: Configure Apache for Health Check
+      copy:
+        content: |
+          <Location "/healthcheck">
+            # Ваша конфігурація для перевірки здоров'я тут
+          </Location>
+        dest: /etc/httpd/conf.d/healthcheck.conf
+      notify:
+        - Restart Apache
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: httpd
+        state: restarted
